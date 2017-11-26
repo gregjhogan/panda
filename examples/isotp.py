@@ -24,7 +24,7 @@ def isotp_send(panda, x, addr, bus=0):
 
     # actually send
     panda.can_send(addr, ss, bus)
-    rr = recv(panda, 1, addr+8, bus)[0]
+    rr = recv(panda, 1, (addr >> 16 << 16) | (addr << 8 & 0xFFFF) | (addr >> 8 & 0xFF), bus)[0]
     panda.can_send_many([(addr, None, s, 0) for s in sends])
 
 kmsgs = []
@@ -54,7 +54,7 @@ def isotp_recv(panda, addr, bus=0):
     # 0 block size?
     CONTINUE = "\x30" + "\x00"*7
 
-    panda.can_send(addr-8, CONTINUE, bus)
+    panda.can_send((addr >> 16 << 16) | (addr << 8 & 0xFFFF) | (addr >> 8 & 0xFF), CONTINUE, bus)
 
     idx = 1
     for mm in recv(panda, (tlen-len(dat) + 7)/8, addr, bus):
