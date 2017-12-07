@@ -21,6 +21,7 @@ int controls_allowed = 0;
 #include "safety/safety_defaults.h"
 #include "safety/safety_honda_nidec.h"
 #include "safety/safety_toyota.h"
+#include "safety/safety_honda_bosch.h"
 #include "safety/safety_elm327.h"
 
 const safety_hooks *current_hooks = &nooutput_hooks;

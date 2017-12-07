@@ -125,4 +125,3 @@ const safety_hooks honda_hooks = {
   .tx = honda_tx_hook,
   .tx_lin = honda_tx_lin_hook,
 };
-
