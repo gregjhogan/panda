@@ -7,14 +7,7 @@
 //      brake rising edge
 //      brake > 0mph
 
-// these are set in the Honda safety hooks...this is the wrong place
-int gas_interceptor_detected = 0;
-int brake_prev = 0;
-int gas_prev = 0;
-int gas_interceptor_prev = 0;
-int ego_speed = 0;
-
-static void honda_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
+static void honda_bosch_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 
   // sample speed
   if ((to_push->RIR>>21) == 0x158) {
@@ -60,7 +53,7 @@ static void honda_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 // else
 //     block all commands that produce actuation
 
-static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
+static int honda_bosch_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
   // disallow actuator commands if gas or brake (with vehicle moving) are pressed
   // and the the latching controls_allowed flag is True
@@ -80,12 +73,12 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   return true;
 }
 
-static void honda_init() {
+static void honda_bosch_init() {
   controls_allowed = 0;
 }
 
-const safety_hooks honda_hooks = {
-  .init = honda_init,
-  .rx = honda_rx_hook,
-  .tx = honda_tx_hook,
+const safety_hooks honda_bosch_hooks = {
+  .init = honda_bosch_init,
+  .rx = honda_bosch_rx_hook,
+  .tx = honda_bosch_tx_hook,
 };
