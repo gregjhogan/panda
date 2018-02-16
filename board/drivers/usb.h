@@ -72,7 +72,7 @@ uint8_t resp[MAX_RESP_LEN];
 #define ENDPOINT_TYPE_INT 3
 
 // This is an arbitrary value used in bRequest
-#define  MS_VENDOR_CODE 0xFF
+#define  MS_VENDOR_CODE 0x20
 
 //Convert machine byte order to USB byte order
 #define TOUSBORDER(num)\
@@ -189,25 +189,31 @@ uint8_t winusb_ext_compatid_os_desc[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // subcompatible ID (none)
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // Reserved
 };
+// uint8_t winusb_ext_prop_os_desc[] = {
+//   0x8e, 0x00, 0x00, 0x00, // dwLength
+//   0x00, 0x01, // bcdVersion
+//   0x05, 0x00, // wIndex
+//   0x01, 0x00, // wCount
+//   // first property
+//   0x84, 0x00, 0x00, 0x00, // dwSize
+//   0x01, 0x00, 0x00, 0x00, // dwPropertyDataType
+//   0x28, 0x00, // wPropertyNameLength
+//   'D',0, 'e',0, 'v',0, 'i',0, 'c',0, 'e',0, 'I',0, 'n',0, 't',0, 'e',0, 'r',0, 'f',0, 'a',0, 'c',0, 'e',0, 'G',0, 'U',0, 'I',0, 'D',0, 0, 0, // bPropertyName (DeviceInterfaceGUID)
+//   0x4e, 0x00, 0x00, 0x00, // dwPropertyDataLength
+//   '{',0, 'E',0, 'A',0, '0',0, 'B',0, 'D',0, '5',0, 'C',0, '3',0, '-',0, '5',0, '0',0, 'F',0, '3',0, '-',0, '4',0, '8',0, '8',0, '8',0, '-',0, '8',0, '4',0, 'B',0, '4',0, '-',0, '7',0, '4',0, 'E',0, '5',0, '0',0, 'E',0, '1',0, '6',0, '4',0, '9',0, 'D',0, 'B',0, '}',0, 0, 0, // bPropertyData ({CCE5291C-A69F-4995-A4C2-2AE57A51ADE9})
+// };
 uint8_t winusb_ext_prop_os_desc[] = {
-  0xCC, 0x00, 0x00, 0x00, // dwLength
+  0x30, 0x00, 0x00, 0x00, // dwLength
   0x00, 0x01, // bcdVersion
   0x05, 0x00, // wIndex
-  0x02, 0x00, // wCount
-  // first property
-  0x84, 0x00, 0x00, 0x00, // dwSize
-  0x01, 0x00, 0x00, 0x00, // dwPropertyDataType
-  0x28, 0x00, // wPropertyNameLength
-  'D',0, 'e',0, 'v',0, 'i',0, 'c',0, 'e',0, 'I',0, 'n',0, 't',0, 'e',0, 'r',0, 'f',0, 'a',0, 'c',0, 'e',0, 'G',0, 'U',0, 'I',0, 'D',0, 0, 0, // bPropertyName (DeviceInterfaceGUID)
-  0x4E, 0x00, 0x00, 0x00, // dwPropertyDataLength
-  '{',0, 'C',0, 'C',0, 'E',0, '5',0, '2',0, '9',0, '1',0, 'C',0, '-',0, 'A',0, '6',0, '9',0, 'F',0, '-',0, '4',0, '9',0, '9',0, '5',0, '-',0, 'A',0, '4',0, 'C',0, '2',0, '-',0, '2',0, 'A',0, 'E',0, '5',0, '7',0, 'A',0, '5',0, '1',0, 'A',0, 'D',0, 'E',0, '9',0, '}',0, 0, 0, // bPropertyData ({CCE5291C-A69F-4995-A4C2-2AE57A51ADE9})
+  0x01, 0x00, // wCount
   // second property
-  0x3E, 0x00, 0x00, 0x00, // dwSize
+  0x26, 0x00, 0x00, 0x00, // dwSize
   0x01, 0x00, 0x00, 0x00, // dwPropertyDataType
   0x0C, 0x00, // wPropertyNameLength
   'L',0, 'a',0, 'b',0, 'e',0, 'l',0, 0, 0, // bPropertyName (Label)
-  0x24, 0x00, 0x00, 0x00, // dwPropertyDataLength
-  'p',0, 'a',0, 'n',0, 'd',0, 'a',0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 // bPropertyData (panda)
+  0x0C, 0x00, 0x00, 0x00, // dwPropertyDataLength
+  'p',0, 'a',0, 'n',0, 'd',0, 'a',0, 0, 0 // bPropertyData (panda)
 };
 #endif
 
