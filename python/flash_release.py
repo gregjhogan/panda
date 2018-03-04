@@ -4,7 +4,10 @@ import sys
 import time
 import requests
 import json
-import StringIO
+try:
+  import StringIO # python2
+except ImportError:
+  from io import StringIO # python3
 
 def flash_release(path=None, st_serial=None):
   from panda import Panda, PandaDFU, ESPROM, CesantaFlasher
