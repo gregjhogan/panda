@@ -36,6 +36,8 @@ def main():
   # send message to read VIN
   print "request VIN"
   msg = "\x02\x09\x02".ljust(8, "\x00")
+  # HDS uses 0x22 0xf1 0x90 to read the VIN
+  #msg = "\x03\x22\xf1\x90".ljust(8, "\x00")
   print "S:", format(ADDR,'x'), msg.encode("hex")
   PANDA.can_send(ADDR, msg, 0)
 
