@@ -6,6 +6,7 @@ from panda import Panda
 
 DEBUG = True
 PANDA = Panda()
+BUS = 2
 DONE = False
 
 def main():
@@ -24,7 +25,7 @@ def main():
   for id in range(0x00, 0x100):
     addr = 0x18DA00F1 | (id << 8)
     # if (DEBUG): print "S:", format(addr,'x'), msg.encode("hex")
-    PANDA.can_send(addr, msg, 0)
+    PANDA.can_send(addr, msg, BUS)
 
   time.sleep(10)
 
@@ -44,7 +45,8 @@ def can_reader():
 
     msgs = PANDA.can_recv()
     for ids, ts, dat, bus in msgs:
-      if bus == 0 and ids > 0xFFFF:
+      #print hex(ids)
+      if bus == BUS and ids > 0xFFFF:
         if (DEBUG): print "R:", format(ids,'x'), ("".join("%02x" % i for i in dat))
     time.sleep(0.001)
 

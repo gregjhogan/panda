@@ -92,7 +92,7 @@ def main():
   exit(0)
   # send message to read data by id
   print "request data"
-  for byte1 in range(0x100):
+  for byte1 in range(237, 0x100):
     print byte1
     for byte2 in range(0x100):
       #if byte1 != 0xf1:

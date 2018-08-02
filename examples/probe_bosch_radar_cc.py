@@ -27,39 +27,38 @@ def main():
   can_reader_t.start()
 
   # extended diagnostic session
-  # msg = "\x02\x10\x03".ljust(8, "\x00")
-  # if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
-  # PANDA.can_send(ADDR, msg, 0)
-  # data = QUEUE.get(block=True, timeout=1)
-  # print("SESSION: " + hexlify(data))
+  msg = "\x02\x10\x03".ljust(8, "\x00")
+  if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
+  PANDA.can_send(ADDR, msg, 0)
+  data = QUEUE.get(block=True, timeout=1)
+  print("SESSION: " + hexlify(data))
 
-  # send message to request periodic data
-  print "request periodic data"
-  for sid in range(0x100):
-    mode = 0x03
-    # tester present
-    #msg = "\x02\x3E\x00".ljust(8, "\x00")
-    #if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
-    #PANDA.can_send(ADDR, msg, 0)
-    #QUEUE.get(block=True, timeout=1)
-    
-    # read data periodic by identifier
-    msg = ("\x03\x2A{}{}".format(chr(mode), chr(sid))).ljust(8, "\x00")
-    if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
-    PANDA.can_send(ADDR, msg, 0)
-    data = QUEUE.get(block=True, timeout=1)
-    if data == chr(sid):
-      #print("{}[{}] {}".format(sid, mode, data))
-      print("{}[{}] {}".format(sid, mode, hexlify(data)))
-
-      # stop data
-      msg = ("\x02\x2A\x04{}".format(chr(mode))).ljust(8, "\x00")
-      if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
-      PANDA.can_send(ADDR, msg, 0)
-      data = QUEUE.get(block=True, timeout=1)
-      print("{}[{}] {}".format(sid, mode, hexlify(data)))
-    elif data != "\x7f\x2a\x11":
-      print("{}[{}] INVALID {}".format(sid, mode, hexlify(data)))
+  # send message to change communication control
+  print "request communication control"
+  for cid in range(65, 0x100):
+    print cid
+    for mode in range(0x80):
+        # if mode != 0x00:
+        #     continue
+        if mode in [1, 3]: # do not disable tx
+            continue
+        # tester present
+        #msg = "\x02\x3E\x00".ljust(8, "\x00")
+        #if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
+        #PANDA.can_send(ADDR, msg, 0)
+        #QUEUE.get(block=True, timeout=1)
+            
+        # communication control
+        msg = ("\x03\x28{}{}".format(chr(mode), chr(cid))).ljust(8, "\x00")
+        if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
+        PANDA.can_send(ADDR, msg, 0)
+        data = QUEUE.get(block=True, timeout=1)
+        # sub function not supported
+        if data == "\x7f\x28\x12":
+            # print("{}[{}] INVALID {}".format(cid, mode, hexlify(data)))
+            continue
+        print("{}[{}] {}".format(cid, mode, hexlify(data)))
+    #break
 
   # exit
   DONE = True
