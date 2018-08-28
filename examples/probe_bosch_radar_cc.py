@@ -26,62 +26,51 @@ def main():
   can_reader_t.daemon = True
   can_reader_t.start()
 
-  # extended diagnostic session
-  msg = "\x02\x10\x03".ljust(8, "\x00")
-  if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
-  PANDA.can_send(ADDR, msg, 0)
-  data = QUEUE.get(block=True, timeout=1)
-  print("SESSION: " + hexlify(data))
+  try:
+    data = ""
+    # wait for success response
+    while data != "\x50\x03":
+      # extended diagnostic session
+      msg = "\x02\x10\x03".ljust(8, "\x00")
+      if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
+      PANDA.can_send(ADDR, msg, 0)
+      data = QUEUE.get(block=True, timeout=10)
+      print("SESSION: " + hexlify(data))
 
-  # send message to change communication control
-  print "request communication control"
-  for cid in range(65, 0x100):
-    print cid
-    for mode in range(0x80):
+    # send message to change communication control
+    print "request communication control"
+    for cid in range(0x100):
+      print cid
+      for mode in range(0x80, 0x84):
+        # only message that seems to do anything is a message that shuts off the radar
+        # \x03\x28\x83\x03
+        if mode in [0x01, 0x03, 0x81, 0x83]: # do not disable tx
+          continue
         # if mode != 0x00:
         #     continue
-        if mode in [1, 3]: # do not disable tx
-            continue
+
         # tester present
         #msg = "\x02\x3E\x00".ljust(8, "\x00")
         #if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
         #PANDA.can_send(ADDR, msg, 0)
         #QUEUE.get(block=True, timeout=1)
-            
+
         # communication control
-        msg = ("\x03\x28{}{}".format(chr(mode), chr(cid))).ljust(8, "\x00")
+        msg = ("\x03\x28{}{}".format(chr(mode | 0x80), chr(cid))).ljust(8, "\x00")
         if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
         PANDA.can_send(ADDR, msg, 0)
-        data = QUEUE.get(block=True, timeout=1)
+        data = QUEUE.get(block=True, timeout=10)
         # sub function not supported
         if data == "\x7f\x28\x12":
-            # print("{}[{}] INVALID {}".format(cid, mode, hexlify(data)))
+            #print("{}[{}] INVALID {}".format(cid, mode, hexlify(data)))
             continue
         print("{}[{}] {}".format(cid, mode, hexlify(data)))
-    #break
-
-  # exit
-  DONE = True
-  can_reader_t.join()
-  PANDA.close()
-  exit(0)
-
-def can_reader():
-  global PANDA
-  global ADDR
-  global QUEUE
-  global DONE
-
-  frame = ""
-  size = 0
-  PANDA.can_clear(0)
-  while (1):
-    if (DONE): return
-
-  # exit
-  DONE = True
-  can_reader_t.join()
-  PANDA.close()
+      #break
+  finally:
+    # exit
+    DONE = True
+    can_reader_t.join()
+    PANDA.close()
   exit(0)
 
 def can_reader():

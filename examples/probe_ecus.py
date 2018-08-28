@@ -6,7 +6,7 @@ from panda import Panda
 
 DEBUG = True
 PANDA = Panda()
-BUS = 2
+BUS = 0
 DONE = False
 
 def main():
