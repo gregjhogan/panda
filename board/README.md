@@ -11,6 +11,7 @@ Dependencies
 
 ```
 ./get_sdk.sh
+./create_udev_rules.sh
 ```
 
 
