@@ -37,6 +37,9 @@ def main():
       data = QUEUE.get(block=True, timeout=10)
       print("SESSION: " + hexlify(data))
 
+    #PANDA.can_send(ADDR, "\x03\x28\x83\x03".ljust(8, "\x00"), 0)
+    #exit(0)
+
     # send message to change communication control
     print "request communication control"
     for cid in range(0x100):
@@ -46,8 +49,11 @@ def main():
         # \x03\x28\x83\x03
         if mode in [0x01, 0x03, 0x81, 0x83]: # do not disable tx
           continue
-        # if mode != 0x00:
-        #     continue
+        # disable TX messages
+        #if mode in [0x80, 0x81, 0x82]:
+        #    continue
+        #if mode != 0x00:
+        #  continue
 
         # tester present
         #msg = "\x02\x3E\x00".ljust(8, "\x00")
@@ -56,15 +62,20 @@ def main():
         #QUEUE.get(block=True, timeout=1)
 
         # communication control
-        msg = ("\x03\x28{}{}".format(chr(mode | 0x80), chr(cid))).ljust(8, "\x00")
+        #msg = ("\x03\x28{}{}".format(chr(mode | 0x80), chr(cid))).ljust(8, "\x00")
+        msg = ("\x03\x28{}{}".format(chr(mode), chr(cid))).ljust(8, "\x00")
         if DEBUG: print "S:", format(ADDR,'x'), msg.encode("hex")
         PANDA.can_send(ADDR, msg, 0)
-        data = QUEUE.get(block=True, timeout=10)
-        # sub function not supported
-        if data == "\x7f\x28\x12":
+        try:
+          data = QUEUE.get(block=True, timeout=10)
+          # sub function not supported
+          if data == "\x7f\x28\x12":
             #print("{}[{}] INVALID {}".format(cid, mode, hexlify(data)))
             continue
-        print("{}[{}] {}".format(cid, mode, hexlify(data)))
+          print("{}[{}] {}".format(cid, mode, hexlify(data)))
+        except Exception as e:
+          print(e)
+          pass
       #break
   finally:
     # exit
