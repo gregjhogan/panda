@@ -71,7 +71,7 @@ def tester_present():
     PANDA.can_send(addr, msg, 0)
 
     # 29 bit address message
-    addr = 0x18DB33F1
+    addr = 0x18DA10F1 #0x18DB33F1
     if (DEBUG): print "S:", format(addr,'x'), msg.encode("hex")
     PANDA.can_send(addr, msg, 0)
 
