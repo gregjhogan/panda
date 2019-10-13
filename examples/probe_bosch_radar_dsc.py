@@ -142,8 +142,9 @@ def main():
   print("tester present ...")
   uds_client.tester_present()
   print("extended diagnostic session ...")
-  uds_client.diagnostic_session_control(SESSION_TYPE.EXTENDED_DIAGNOSTIC)
   for st in range(0x80):
+    #uds_client.diagnostic_session_control(SESSION_TYPE.DEFAULT)
+    uds_client.diagnostic_session_control(SESSION_TYPE.EXTENDED_DIAGNOSTIC)
     try:
       uds_client.diagnostic_session_control(st)
       print("{}:{}".format(hex(st), 'SUCCESS'))
