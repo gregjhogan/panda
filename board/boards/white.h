@@ -320,7 +320,7 @@ void white_init(void) {
   #ifdef EON
     current_board->set_esp_gps_mode(ESP_GPS_DISABLED);
   #else
-    current_board->set_esp_gps_mode(ESP_GPS_ENABLED);
+    current_board->set_esp_gps_mode(ESP_GPS_DISABLED);
   #endif
 }
 
