@@ -24,7 +24,7 @@ print(f"vehicle: {state}")
 print(f"temp: {temp} {temp_units}")
 
 result = uds_client.read_data_by_identifier(0x7029)
-fuel = struct.unpack('!H', result[12:14])[0]
+fuel = round(struct.unpack('!H', result[12:14])[0] * 0.00264172, 1)
 print(f"fuel: {fuel} gal")
 
 result = uds_client.read_data_by_identifier(0x702A)
