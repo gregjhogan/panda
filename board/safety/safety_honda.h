@@ -7,9 +7,12 @@
 //      brake rising edge
 //      brake > 0mph
 const AddrBus HONDA_N_TX_MSGS[] = {{0xE4, 0}, {0x194, 0}, {0x1FA, 0}, {0x200, 0}, {0x30C, 0}, {0x33D, 0}};
-const AddrBus HONDA_BG_TX_MSGS[] = {{0xE4, 2}, {0x296, 0}, {0x33D, 2}};  // Bosch Giraffe
-const AddrBus HONDA_BH_TX_MSGS[] = {{0xE4, 0}, {0x296, 1}, {0x33D, 0}};  // Bosch Harness
+const AddrBus HONDA_BG_TX_MSGS[] = {{0xE4, 0}, {0xE4, 2}, {0x1DF, 0}, {0x1EF, 0}, {0x296, 0}, {0x30C, 0}, {0x33D, 0}, {0x33D, 2}, {0x39F, 0}, {0x18DAB0F1, 0}};  // Bosch Giraffe
+const AddrBus HONDA_BH_TX_MSGS[] = {{0xE4, 0}, {0xE4, 1}, {0x1DF, 1}, {0x1EF, 1}, {0x296, 1}, {0x30C, 1}, {0x33D, 0}, {0x33D, 1}, {0x39F, 1}, {0x18DAB0F1, 1}};  // Bosch Harness
 const int HONDA_GAS_INTERCEPTOR_THRESHOLD = 328;  // ratio between offset and gain from dbc file
+const int HONDA_BOSCH_NO_GAS_VALUE = -30000; // value sent when not requesting gas
+const int HONDA_BOSCH_GAS_MAX = 2000;
+const int HONDA_BOSCH_ACCEL_MIN = -350; // max braking == -3.5m/s2
 
 // Nidec and Bosch giraffe have pt on bus 0
 AddrCheckStruct honda_rx_checks[] = {
@@ -191,6 +194,7 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   } else {
     tx = msg_allowed(addr, bus, HONDA_N_TX_MSGS, sizeof(HONDA_N_TX_MSGS)/sizeof(HONDA_N_TX_MSGS[0]));
   }
+  int bus_pt = (honda_hw == HONDA_BH_HW)? 1 : 0;
 
   if (relay_malfunction) {
     tx = 0;
@@ -205,7 +209,7 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   }
   bool current_controls_allowed = controls_allowed && !(pedal_pressed);
 
-  // BRAKE: safety check
+  // BRAKE: safety check (nidec)
   if ((addr == 0x1FA) && (bus == 0)) {
     honda_brake = (GET_BYTE(to_send, 0) << 2) + ((GET_BYTE(to_send, 1) >> 6) & 0x3);
     if (!current_controls_allowed) {
@@ -220,6 +224,30 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
       tx = 0;
     }
   }
+  // BRAKE/GAS: safety check (bosch)
+  if ((addr == 0x1DF) && (bus == bus_pt)) {
+    int accel = (GET_BYTE(to_send, 3) << 3) + ((GET_BYTE(to_send, 4) >> 5) & 0x7);
+    accel = to_signed(accel, 11);
+    if (!current_controls_allowed) {
+      if (accel != 0) {
+        tx = 0;
+      }
+    }
+    if (accel < HONDA_BOSCH_ACCEL_MIN) {
+      tx = 0;
+    }
+
+    int gas = (GET_BYTE(to_send, 0) << 8) | GET_BYTE(to_send, 1);
+    gas = to_signed(gas, 16);
+    if (!current_controls_allowed) {
+      if (gas != HONDA_BOSCH_NO_GAS_VALUE) {
+        tx = 0;
+      }
+    }
+    if (gas > HONDA_BOSCH_GAS_MAX) {
+      tx = 0;
+    }
+  }
 
   // STEER: safety check
   if ((addr == 0xE4) || (addr == 0x194)) {
@@ -231,7 +259,7 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
     }
   }
 
-  // GAS: safety check
+  // GAS: safety check (interceptor)
   if (addr == 0x200) {
     if (!current_controls_allowed) {
       if (GET_BYTE(to_send, 0) || GET_BYTE(to_send, 1)) {
@@ -243,7 +271,6 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
   // FORCE CANCEL: safety check only relevant when spamming the cancel button in Bosch HW
   // ensuring that only the cancel button press is sent (VAL 2) when controls are off.
   // This avoids unintended engagements while still allowing resume spam
-  int bus_pt = (honda_hw == HONDA_BH_HW)? 1 : 0;
   if ((addr == 0x296) && !current_controls_allowed && (bus == bus_pt)) {
     if (((GET_BYTE(to_send, 0) >> 5) & 0x7) != 2) {
       tx = 0;

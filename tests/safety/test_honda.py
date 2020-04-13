@@ -6,12 +6,15 @@ from panda.tests.safety import libpandasafety_py
 from panda.tests.safety.common import StdTest, make_msg, interceptor_msg, \
                                       MAX_WRONG_COUNTERS, UNSAFE_MODE
 
-MAX_BRAKE = 255
+NIDEC_MAX_BRAKE = 255
+BOSCH_MAX_BRAKE = 350
+BOSCH_MAX_GAS = 2000
+BOSCH_NO_GAS = -30000
 
 INTERCEPTOR_THRESHOLD = 328
 N_TX_MSGS = [[0xE4, 0], [0x194, 0], [0x1FA, 0], [0x200, 0], [0x30C, 0], [0x33D, 0]]
-BH_TX_MSGS = [[0xE4, 0], [0x296, 1], [0x33D, 0]]  # Bosch Harness
-BG_TX_MSGS = [[0xE4, 2], [0x296, 0], [0x33D, 2]]  # Bosch Giraffe
+BH_TX_MSGS = [[0xE4, 0], [0xE4, 1], [0x1DF, 1], [0x1EF, 1], [0x296, 1], [0x30C, 1], [0x33D, 0], [0x33D, 1], [0x39F, 1]]  # Bosch Harness
+BG_TX_MSGS = [[0xE4, 0], [0xE4, 2], [0x1DF, 0], [0x1EF, 0], [0x296, 0], [0x30C, 0], [0x33D, 0], [0x33D, 2], [0x39F, 0]]  # Bosch Giraffe
 
 
 HONDA_N_HW = 0
@@ -83,9 +86,24 @@ class TestHondaSafety(unittest.TestCase):
     self.__class__.cnt_gas += 1
     return to_send
 
-  def _send_brake_msg(self, brake):
-    to_send = make_msg(0, 0x1FA)
+  def _send_brake_msg_nidec(self, bus, sign, brake):
+    to_send = make_msg(bus, 0x1FA)
+    brake = (brake * sign) & 0x3FF
     to_send[0].RDLR = ((brake & 0x3) << 14) | ((brake & 0x3FF) >> 2)
+    return to_send
+
+  def _send_brake_msg_bosch(self, bus, sign, brake):
+    to_send = make_msg(bus, 0x1DF)
+    brake = (brake * sign) & 0x7FF
+    to_send[0].RDLR = (brake & 0x7F8) << 21
+    to_send[0].RDHR = (brake & 0x7) << 5
+    # gas command in same message, send idle to pass safety check
+    to_send[0].RDLR |= ((BOSCH_NO_GAS & 0xFF) << 8) | ((BOSCH_NO_GAS >> 8) & 0xFF)
+    return to_send
+
+  def _send_gas_msg_bosch(self, bus, gas):
+    to_send = make_msg(bus, 0x1DF)
+    to_send[0].RDLR = ((gas & 0xFF) << 8) | ((gas >> 8) & 0xFF)
     return to_send
 
   def _send_steer_msg(self, steer):
@@ -228,20 +246,36 @@ class TestHondaSafety(unittest.TestCase):
 
   def test_brake_safety_check(self):
     hw = self.safety.get_honda_hw()
-    if hw == HONDA_N_HW:
-      for fwd_brake in [False, True]:
-        self.safety.set_honda_fwd_brake(fwd_brake)
-        for brake in np.arange(0, MAX_BRAKE + 10, 1):
-          for controls_allowed in [True, False]:
-            self.safety.set_controls_allowed(controls_allowed)
-            if fwd_brake:
-              send = False  # block openpilot brake msg when fwd'ing stock msg
-            elif controls_allowed:
-              send = MAX_BRAKE >= brake >= 0
-            else:
-              send = brake == 0
-            self.assertEqual(send, self.safety.safety_tx_hook(self._send_brake_msg(brake)))
+    bus_pt = 1 if hw == HONDA_BH_HW else 0
+    send_brake_msg = self._send_brake_msg_nidec if hw == HONDA_N_HW else self._send_brake_msg_bosch
+    brake_max = NIDEC_MAX_BRAKE if hw == HONDA_N_HW else BOSCH_MAX_BRAKE
+    brake_sign = 1 if hw == HONDA_N_HW else -1
+
+    for fwd_brake in [False, True]:
+      if hw != HONDA_N_HW and fwd_brake:
+        continue # can only forward AEB for nidec
+      self.safety.set_honda_fwd_brake(fwd_brake)
+      for brake in np.arange(0, brake_max + 10, 1):
+        for controls_allowed in [True, False]:
+          self.safety.set_controls_allowed(controls_allowed)
+          if fwd_brake:
+            send = False  # block openpilot brake msg when fwd'ing stock msg
+          elif controls_allowed:
+            send = brake_max >= brake >= 0
+          else:
+            send = brake == 0
+          self.assertEqual(send, self.safety.safety_tx_hook(send_brake_msg(bus_pt, brake_sign, brake)))
       self.safety.set_honda_fwd_brake(False)
+
+  def test_gas_safety_check(self):
+    hw = self.safety.get_honda_hw()
+    bus_pt = 1 if hw == HONDA_BH_HW else 0
+    if hw != HONDA_N_HW:
+      for controls_allowed in [True, False]:
+        for gas in np.arange(BOSCH_NO_GAS, BOSCH_MAX_GAS + 2000, 100):
+          self.safety.set_controls_allowed(controls_allowed)
+          send = gas <= BOSCH_MAX_GAS if controls_allowed else gas == BOSCH_NO_GAS
+          self.assertEqual(send, self.safety.safety_tx_hook(self._send_gas_msg_bosch(bus_pt, gas)))
 
   def test_gas_interceptor_safety_check(self):
     if self.safety.get_honda_hw() == HONDA_N_HW:
@@ -366,13 +400,13 @@ class TestHondaSafety(unittest.TestCase):
       hw = self.safety.get_honda_hw()
       if hw == HONDA_N_HW:
         self.safety.set_honda_fwd_brake(False)
-        self.assertFalse(self.safety.safety_tx_hook(self._send_brake_msg(MAX_BRAKE)))
+        self.assertFalse(self.safety.safety_tx_hook(self._send_brake_msg_nidec(0, 1, NIDEC_MAX_BRAKE)))
         self.assertFalse(self.safety.safety_tx_hook(interceptor_msg(INTERCEPTOR_THRESHOLD, 0x200)))
       self.assertFalse(self.safety.safety_tx_hook(self._send_steer_msg(0x1000)))
 
       # reset status
       self.safety.set_controls_allowed(0)
-      self.safety.safety_tx_hook(self._send_brake_msg(0))
+      self.safety.safety_tx_hook(self._send_brake_msg_nidec(0, 1, 0))
       self.safety.safety_tx_hook(self._send_steer_msg(0))
       self.safety.safety_tx_hook(interceptor_msg(0, 0x200))
       if pedal == 'brake':
@@ -405,13 +439,13 @@ class TestHondaSafety(unittest.TestCase):
       hw = self.safety.get_honda_hw()
       if hw == HONDA_N_HW:
         self.safety.set_honda_fwd_brake(False)
-        self.assertEqual(allow_ctrl, self.safety.safety_tx_hook(self._send_brake_msg(MAX_BRAKE)))
+        self.assertEqual(allow_ctrl, self.safety.safety_tx_hook(self._send_brake_msg_nidec(0, 1, NIDEC_MAX_BRAKE)))
         self.assertEqual(allow_ctrl, self.safety.safety_tx_hook(interceptor_msg(INTERCEPTOR_THRESHOLD, 0x200)))
       self.assertEqual(allow_ctrl, self.safety.safety_tx_hook(self._send_steer_msg(0x1000)))
       # reset status
       self.safety.set_controls_allowed(0)
       self.safety.set_unsafe_mode(UNSAFE_MODE.DEFAULT)
-      self.safety.safety_tx_hook(self._send_brake_msg(0))
+      self.safety.safety_tx_hook(self._send_brake_msg_nidec(0, 1, 0))
       self.safety.safety_tx_hook(self._send_steer_msg(0))
       self.safety.safety_tx_hook(interceptor_msg(0, 0x200))
       if pedal == 'brake':
