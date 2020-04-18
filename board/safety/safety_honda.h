@@ -7,8 +7,8 @@
 //      brake rising edge
 //      brake > 0mph
 const AddrBus HONDA_N_TX_MSGS[] = {{0xE4, 0}, {0x194, 0}, {0x1FA, 0}, {0x200, 0}, {0x30C, 0}, {0x33D, 0}};
-const AddrBus HONDA_BG_TX_MSGS[] = {{0xE4, 0}, {0xE4, 2}, {0x1DF, 0}, {0x1EF, 0}, {0x296, 0}, {0x30C, 0}, {0x33D, 0}, {0x33D, 2}, {0x39F, 0}, {0x18DAB0F1, 0}};  // Bosch Giraffe
-const AddrBus HONDA_BH_TX_MSGS[] = {{0xE4, 0}, {0xE4, 1}, {0x1DF, 1}, {0x1EF, 1}, {0x296, 1}, {0x30C, 1}, {0x33D, 0}, {0x33D, 1}, {0x39F, 1}, {0x18DAB0F1, 1}};  // Bosch Harness
+const AddrBus HONDA_BG_TX_MSGS[] = {{0xE4, 0}, {0xE4, 2}, {0x1DF, 0}, {0x1EF, 0}, {0x1FA, 0}, {0x296, 0}, {0x30C, 0}, {0x33D, 0}, {0x33D, 2}, {0x39F, 0}, {0x18DAB0F1, 0}};  // Bosch Giraffe
+const AddrBus HONDA_BH_TX_MSGS[] = {{0xE4, 0}, {0xE4, 1}, {0x1DF, 1}, {0x1EF, 1}, {0x1FA, 1}, {0x296, 1}, {0x30C, 1}, {0x33D, 0}, {0x33D, 1}, {0x39F, 1}, {0x18DAB0F1, 1}};  // Bosch Harness
 const int HONDA_GAS_INTERCEPTOR_THRESHOLD = 328;  // ratio between offset and gain from dbc file
 const int HONDA_BOSCH_NO_GAS_VALUE = -30000; // value sent when not requesting gas
 const int HONDA_BOSCH_GAS_MAX = 2000;
