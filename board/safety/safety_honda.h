@@ -224,6 +224,11 @@ static int honda_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
       tx = 0;
     }
   }
+  // Legacy brake command safety (0x1FA on CIVIC_BOSCH)
+  else if ((addr == 0x1FA) && (bus == 1)) {
+    // check bytes 0-6. Block if not all zero
+    tx = (GET_BYTES_04(to_send) || GET_BYTE(to_send, 4) || GET_BYTE(to_send, 5) || GET_BYTE(to_send, 6)) ? 0 : 1;
+  }
   // BRAKE/GAS: safety check (bosch)
   if ((addr == 0x1DF) && (bus == bus_pt)) {
     int accel = (GET_BYTE(to_send, 3) << 3) + ((GET_BYTE(to_send, 4) >> 5) & 0x7);
