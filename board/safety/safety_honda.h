@@ -29,18 +29,34 @@ AddrCheckStruct honda_rx_checks[] = {
   {.msg = {{0x1A6, 0, 8},  {0x296, 0, 4}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U},
   {.msg = {{0x158, 0, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
   {.msg = {{0x17C, 0, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-  {.msg = {{0x1BE, 0, 3}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
 };
 const int HONDA_RX_CHECKS_LEN = sizeof(honda_rx_checks) / sizeof(honda_rx_checks[0]);
+
+// Nidec and Bosch giraffe have pt on bus 0 (ALT_BRAKE_FLAG)
+AddrCheckStruct honda_rx_alt_checks[] = {
+  {.msg = {{0x1A6, 0, 8},  {0x296, 0, 4}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U},
+  {.msg = {{0x158, 0, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+  {.msg = {{0x17C, 0, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+  {.msg = {{0x1BE, 0, 3}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+};
+const int HONDA_RX_ALT_CHECKS_LEN = sizeof(honda_rx_alt_checks) / sizeof(honda_rx_alt_checks[0]);
 
 // Bosch harness has pt on bus 1
 AddrCheckStruct honda_bh_rx_checks[] = {
   {.msg = {{0x296, 1, 4}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U},
   {.msg = {{0x158, 1, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
   {.msg = {{0x17C, 1, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
-  {.msg = {{0x1BE, 1, 3}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
 };
 const int HONDA_BH_RX_CHECKS_LEN = sizeof(honda_bh_rx_checks) / sizeof(honda_bh_rx_checks[0]);
+
+// Bosch harness has pt on bus 1 (ALT_BRAKE_FLAG)
+AddrCheckStruct honda_bh_rx_alt_checks[] = {
+  {.msg = {{0x296, 1, 4}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 40000U},
+  {.msg = {{0x158, 1, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+  {.msg = {{0x17C, 1, 8}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+  {.msg = {{0x1BE, 1, 3}}, .check_checksum = true, .max_counter = 3U, .expected_timestep = 10000U},
+};
+const int HONDA_BH_RX_ALT_CHECKS_LEN = sizeof(honda_bh_rx_alt_checks) / sizeof(honda_bh_rx_alt_checks[0]);
 
 const uint16_t HONDA_PARAM_ALT_BRAKE = 1;
 const uint16_t HONDA_PARAM_BOSCH_LONG = 2;
@@ -82,8 +98,20 @@ static uint8_t honda_get_counter(CAN_FIFOMailBox_TypeDef *to_push) {
 static int honda_rx_hook(CAN_FIFOMailBox_TypeDef *to_push) {
 
   bool valid;
-  if (honda_hw == HONDA_BH_HW) {
+
+  // Bosch Harness w/o alt_brake_flag
+  // Bosch Harness w/ alt_brake_flag
+  // Bosch Giraffe w/ alt_brake_flag
+  // All others (Nidec, Bosch w/o alt_brake_flag)
+
+  if ((honda_hw == HONDA_BH_HW) && !honda_alt_brake_msg) {
     valid = addr_safety_check(to_push, honda_bh_rx_checks, HONDA_BH_RX_CHECKS_LEN,
+                              honda_get_checksum, honda_compute_checksum, honda_get_counter);
+  } else if ((honda_hw == HONDA_BH_HW) && honda_alt_brake_msg) {
+    valid = addr_safety_check(to_push, honda_bh_rx_alt_checks, HONDA_BH_RX_ALT_CHECKS_LEN,
+                              honda_get_checksum, honda_compute_checksum, honda_get_counter);
+  } else if ((honda_hw += HONDA_BG_HW) && honda_alt_brake_msg) {
+    valid = addr_safety_check(to_push, honda_rx_alt_checks, HONDA_RX_ALT_CHECKS_LEN,
                               honda_get_checksum, honda_compute_checksum, honda_get_counter);
   } else {
     valid = addr_safety_check(to_push, honda_rx_checks, HONDA_RX_CHECKS_LEN,
