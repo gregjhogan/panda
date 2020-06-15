@@ -587,7 +587,7 @@ class Panda(object):
       if len(ret) == 0:
         break
       elif DEBUG:
-        print("kline drain: " + binascii.hexlify(ret))
+        print("kline drain: 0x" + ret.hex())
       bret += ret
     return bytes(bret)
 
@@ -596,9 +596,9 @@ class Panda(object):
     while len(echo) != cnt:
       ret = self._handle.controlRead(Panda.REQUEST_OUT, 0xe0, bus, 0, cnt - len(echo))
       if DEBUG and len(ret) > 0:
-        print("kline recv: " + binascii.hexlify(ret))
+        print("kline recv: 0x" + ret.hex())
       echo += ret
-    return str(echo)
+    return bytes(echo)
 
   def kline_send(self, x, bus=2, checksum=True):
     def get_checksum(dat):
@@ -613,7 +613,7 @@ class Panda(object):
     for i in range(0, len(x), 0xf):
       ts = x[i:i + 0xf]
       if DEBUG:
-        print("kline send: " + binascii.hexlify(ts))
+        print("kline send: 0x" + ts.hex())
       self._handle.bulkWrite(2, bytes([bus]) + ts)
       echo = self.kline_ll_recv(len(ts), bus=bus)
       if echo != ts:
@@ -624,7 +624,7 @@ class Panda(object):
 
   def kline_recv(self, bus=2):
     msg = self.kline_ll_recv(2, bus=bus)
-    msg += self.kline_ll_recv(ord(msg[1]) - 2, bus=bus)
+    msg += self.kline_ll_recv(msg[1] - 2, bus=bus)
     return msg
 
   def send_heartbeat(self):

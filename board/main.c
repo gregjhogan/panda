@@ -559,36 +559,40 @@ int usb_cb_control_msg(USB_Setup_TypeDef *setup, uint8_t *resp, bool hardwired) 
       break;
     // **** 0xf0: do k-line wValue pulse on uart2 for Acura
     case 0xf0:
-      if (setup->b.wValue.w == 1U) {
-        GPIOC->ODR &= ~(1U << 10);
-        GPIOC->MODER &= ~GPIO_MODER_MODER10_1;
-        GPIOC->MODER |= GPIO_MODER_MODER10_0;
-      } else {
-        GPIOC->ODR &= ~(1U << 12);
-        GPIOC->MODER &= ~GPIO_MODER_MODER12_1;
-        GPIOC->MODER |= GPIO_MODER_MODER12_0;
+      set_gpio_output(GPIOC, 12, false);
+      set_gpio_output(GPIOC, 10, false);
+      //if (setup->b.wValue.w == 1) {
+      //  GPIOC->ODR &= ~(1 << 10);
+      //  GPIOC->MODER &= ~GPIO_MODER_MODER10_1;
+      //  GPIOC->MODER |= GPIO_MODER_MODER10_0;
+      //} else {
+      //  GPIOC->ODR &= ~(1 << 12);
+      //  GPIOC->MODER &= ~GPIO_MODER_MODER12_1;
+      //  GPIOC->MODER |= GPIO_MODER_MODER12_0;
+      //}
+
+      for (i = 0; i < 25; i++) {
+        delay(9500);
+        //if (setup->b.wValue.w == 1) {
+          GPIOC->ODR |= (1 << 10);
+          GPIOC->ODR &= ~(1 << 10);
+        //} else {
+          GPIOC->ODR |= (1 << 12);
+          GPIOC->ODR &= ~(1 << 12);
+        //}
       }
 
-      for (i = 0; i < 80; i++) {
-        delay(8000);
-        if (setup->b.wValue.w == 1U) {
-          GPIOC->ODR |= (1U << 10);
-          GPIOC->ODR &= ~(1U << 10);
-        } else {
-          GPIOC->ODR |= (1U << 12);
-          GPIOC->ODR &= ~(1U << 12);
-        }
-      }
+      set_gpio_mode(GPIOC, 12, MODE_ALTERNATE);
+      set_gpio_mode(GPIOC, 10, MODE_ALTERNATE);
+      //if (setup->b.wValue.w == 1) {
+      //  GPIOC->MODER &= ~GPIO_MODER_MODER10_0;
+      //  GPIOC->MODER |= GPIO_MODER_MODER10_1;
+      //} else {
+      //  GPIOC->MODER &= ~GPIO_MODER_MODER12_0;
+      //  GPIOC->MODER |= GPIO_MODER_MODER12_1;
+      //}
 
-      if (setup->b.wValue.w == 1U) {
-        GPIOC->MODER &= ~GPIO_MODER_MODER10_0;
-        GPIOC->MODER |= GPIO_MODER_MODER10_1;
-      } else {
-        GPIOC->MODER &= ~GPIO_MODER_MODER12_0;
-        GPIOC->MODER |= GPIO_MODER_MODER12_1;
-      }
-
-      delay(140 * 9000);
+      delay(24 * 9500);
       break;
     // **** 0xf1: Clear CAN ring buffer.
     case 0xf1:
