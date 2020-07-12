@@ -687,7 +687,7 @@ void TIM1_BRK_TIM9_IRQ_Handler(void) {
     fan_tick();
 
     // set green LED to be controls allowed
-    current_board->set_led(LED_GREEN, controls_allowed);
+    current_board->set_led(LED_GREEN, controls_allowed && (power_save_status == POWER_SAVE_STATUS_DISABLED));
 
     // turn off the blue LED, turned on by CAN
     // unless we are in power saving mode
@@ -726,6 +726,17 @@ void TIM1_BRK_TIM9_IRQ_Handler(void) {
     // enter CDP mode when car starts to ensure we are charging a turned off EON
     if (check_started() && (usb_power_mode != USB_POWER_CDP)) {
       current_board->set_usb_power_mode(USB_POWER_CDP);
+    }
+    #endif
+    #ifdef GATEWAY
+    if (ignition_can_cnt > 2U) {
+      if (power_save_status != POWER_SAVE_STATUS_ENABLED) {
+        set_power_save_state(POWER_SAVE_STATUS_ENABLED);
+      }
+    } else {
+      if (power_save_status != POWER_SAVE_STATUS_DISABLED) {
+        set_power_save_state(POWER_SAVE_STATUS_DISABLED);
+      }
     }
     #endif
 
@@ -817,7 +828,14 @@ int main(void) {
   // use TIM2->CNT to read
 
   // init to SILENT and can silent
+#ifdef GATEWAY
   set_safety_mode(SAFETY_ALLOUTPUT, 0);
+  can_set_forwarding(1, 0);
+  can_speed[1] = 1250;
+  can_init(CAN_NUM_FROM_BUS_NUM(1));
+#else
+  set_safety_mode(SAFETY_SILENT, 0);
+#endif
 
   // enable CAN TXs
   current_board->enable_can_transcievers(true);

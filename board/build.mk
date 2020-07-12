@@ -7,6 +7,7 @@ DFU_UTIL = "dfu-util"
 # Compile fast charge (DCP) only not on EON
 ifeq (,$(wildcard /EON))
   BUILDER = DEV
+  CFLAGS += "-DGATEWAY"
 else
   CFLAGS += "-DEON"
   BUILDER = EON
