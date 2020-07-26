@@ -829,8 +829,8 @@ int main(void) {
 
   // init to SILENT and can silent
 #ifdef GATEWAY
-  set_safety_mode(SAFETY_ALLOUTPUT, 0);
-  can_set_forwarding(1, 0);
+  set_safety_mode(SAFETY_HONDA_GATEWAY, 0);
+  // TODO: set CAN speed in safety hook?
   can_speed[1] = 1250;
   can_init(CAN_NUM_FROM_BUS_NUM(1));
 #else

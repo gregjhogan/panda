@@ -368,6 +368,43 @@ static int honda_bosch_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
   return bus_fwd;
 }
 
+static void honda_gateway_init(int16_t param) {
+  UNUSED(param);
+  relay_malfunction_reset();
+  // TODO: set CAN speed here?
+  // can_speed[1] = 1250;
+  // can_init(CAN_NUM_FROM_BUS_NUM(1));
+}
+
+static int honda_gateway_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
+  int bus_fwd = -1;
+  int addr = GET_ADDR(to_fwd);
+
+  // 0x16F118F0 = BCM request
+  bool bcan_out = (addr == 0x16F118F0);
+  if ((bus_num == 0) && bcan_out) {
+    bus_fwd = 1;
+  }
+
+  // 0x16F1F018 = BCM response
+  // 0x12F8BFA7 = BSM status right
+  // 0x12F8BE9F = BSM status left
+  bool bcan_in = (addr == 0x16F1F018) || (addr == 0x12F8BFA7) || (addr == 0x12F8BE9F);
+  if ((bus_num == 1) && bcan_in) {
+    bus_fwd = 0;
+  }
+
+  return bus_fwd;
+}
+
+const safety_hooks honda_gateway_hooks = {
+  .init = honda_gateway_init,
+  .rx = default_rx_hook,
+  .tx = alloutput_tx_hook,
+  .tx_lin = alloutput_tx_lin_hook,
+  .fwd = honda_gateway_fwd_hook,
+};
+
 const safety_hooks honda_nidec_hooks = {
   .init = honda_nidec_init,
   .rx = honda_rx_hook,

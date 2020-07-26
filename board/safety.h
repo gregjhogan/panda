@@ -38,6 +38,7 @@
 #define SAFETY_VOLKSWAGEN_PQ 21U
 #define SAFETY_SUBARU_LEGACY 22U
 #define SAFETY_HYUNDAI_LEGACY 23U
+#define SAFETY_HONDA_GATEWAY 100U
 
 uint16_t current_safety_mode = SAFETY_SILENT;
 const safety_hooks *current_hooks = &nooutput_hooks;
@@ -256,6 +257,7 @@ const safety_hook_config safety_hook_registry[] = {
   {SAFETY_ALLOUTPUT, &alloutput_hooks},
   {SAFETY_GM_ASCM, &gm_ascm_hooks},
   {SAFETY_FORD, &ford_hooks},
+  {SAFETY_HONDA_GATEWAY, &honda_gateway_hooks},
 #endif
 };
 
