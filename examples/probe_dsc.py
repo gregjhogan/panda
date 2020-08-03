@@ -12,16 +12,27 @@ if __name__ == "__main__":
 
   panda = Panda()
   panda.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
+  uds_client = UdsClient(panda, args.can_addr, bus=args.can_bus, timeout=0.1, debug=False)
 
-  print("querying addrs ...")
-  l = list(range(0x600, 0x800))
+  print("querying ids ...")
+  l = list(range(0x80))
   with tqdm(total=len(l)) as t:
     for i in l:
-      t.set_description(f"{hex(i)}")
-      uds_client = UdsClient(panda, i, bus=args.can_bus, timeout=0.1, debug=False)
+      uds_client.diagnostic_session_control(SESSION_TYPE.DEFAULT)
       try:
-        uds_client.diagnostic_session_control(SESSION_TYPE.DEFAULT)
-        uds_client.tester_present()
-      except MessageTimeoutError as e:
-        pass
+        t.set_description(f"{hex(i)}")
+        uds_client.diagnostic_session_control(i)
+        print(f"\n{hex(i)}: success")
+      except NegativeResponseError as e:
+        if e.error_code != 0x12: # sub-function not supported
+          print(f"\n{hex(i)}: {e.error_code} - {e.message}")
       t.update(1)
+
+# connected
+# querying ids ...
+# 0x1: success
+# 0x2: success
+# 0x3: success
+# 0x5: success
+# 0x7: success
+# 0x10: success
