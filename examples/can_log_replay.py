@@ -1,53 +1,62 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+import os
 import sys
 import time
-import struct
+from collections import defaultdict
+import binascii
+
 from panda import Panda
+from tools.lib.logreader import LogReader
 
-DEBUG = False
+# replay a drive to check for safety violations
+def replay_drive(lr, p):
+  start = time.time()
+  start_t = None
 
-def main():
-  logfile = sys.argv[1]
+  for msg in lr:
+    if start_t is None:
+      start_t = msg.logMonoTime
 
-  print "open log file {}".format(logfile)
-  with open(logfile,'r') as log:
-
-    print "wait for panda ..."
-    p = None
-    while not p:
-      time.sleep(0.1)
-      try:
-          p = Panda()
-      except:
-          pass
-
-    start_time = time.time()
-
-    print "replay log ..."
-    log.readline() # skip header
-    for line in log:
-      line = line.rstrip()
-      if not line: continue
-
-      # parse the log line
-      t, addr, bus, data = line.split(',')
-      bus = int(bus)
-      if (bus >= 100): continue # skip forwarded messages
-      t = float(t) + start_time
-      addr = int(addr)
-      data = data.rstrip().decode("hex")
-
-      # wait for the correct moment to send the message
-      tdiff = time.time() - t
-      while (tdiff <= 0):
-          tdiff = time.time() - t
-      if tdiff > .1: print "lagged {}".format(tdiff)
-
-      p.can_send(addr, data, bus)
-      if DEBUG: print line
-
-  print "\nDone!"
-  p.close()
+    # if msg.which() == 'sendcan':
+    #   for canmsg in msg.sendcan:
+    #     if canmsg.src == 2:
+    #       continue
+    #     p.can_send(canmsg.address, canmsg.dat, canmsg.src)
+    if msg.which() == 'can':
+      msgs = []
+      for canmsg in msg.can:
+        # no camera
+        if canmsg.src == 2 or canmsg.src == 130:
+          continue
+        # radar tx addrs
+        if canmsg.address in (0x389, 0x38D, 0x420, 0x421, 0x483, 0x4A2, 0x50A, 0x5ED, 0x5EE, 0x5EF):
+          continue
+        # radar tracks (hopefully)
+        if canmsg.address >= 0x600 and canmsg.address <= 0x6FF:
+          continue
+        # convert sent messages to appropriate bus
+        bus = canmsg.src if canmsg.src < 128 else canmsg.src - 128
+        msgs.append([canmsg.address, None, canmsg.dat, bus])
+      tdelta = (msg.logMonoTime - start_t) / 1e9
+      tdiff = time.time() - start
+      while tdelta > tdiff:
+        tdiff = time.time() - start
+      p.can_send_many(msgs)
+      tlag = tdiff - tdelta
+      if tlag >= .0005:
+        print(f"lag: {tlag}")
 
 if __name__ == "__main__":
-  main()
+  print("wait for panda ...")
+  p = None
+  while not p:
+    time.sleep(0.1)
+    try:
+        p = Panda()
+        p.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
+    except:
+        pass
+      
+  lr = LogReader(sys.argv[1])
+  replay_drive(lr, p)
