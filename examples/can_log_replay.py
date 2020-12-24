@@ -15,7 +15,7 @@ def replay_drive(lr, p):
   start_t = None
 
   for msg in lr:
-    if start_t is None:
+    if start_t is None and msg.which() != 'initData':
       start_t = msg.logMonoTime
 
     # if msg.which() == 'sendcan':
@@ -26,14 +26,17 @@ def replay_drive(lr, p):
     if msg.which() == 'can':
       msgs = []
       for canmsg in msg.can:
-        # no camera
-        if canmsg.src == 2 or canmsg.src == 130:
+        # # no camera
+        # if canmsg.src == 2 or canmsg.src == 130:
+        #   continue
+        # # radar tx addrs
+        # if canmsg.address in (0x389, 0x38D, 0x420, 0x421, 0x483, 0x4A2, 0x50A, 0x5ED, 0x5EE, 0x5EF):
+        #   continue
+        # only replay powertrain bus
+        if canmsg.src != 0 and canmsg.src != 128:
           continue
-        # radar tx addrs
-        if canmsg.address in (0x389, 0x38D, 0x420, 0x421, 0x483, 0x4A2, 0x50A, 0x5ED, 0x5EE, 0x5EF):
-          continue
-        # radar tracks (hopefully)
-        if canmsg.address >= 0x600 and canmsg.address <= 0x6FF:
+        # eps tx addrs
+        if canmsg.address in (0x251, 0x2B0, 0x381):
           continue
         # convert sent messages to appropriate bus
         bus = canmsg.src if canmsg.src < 128 else canmsg.src - 128
@@ -53,10 +56,14 @@ if __name__ == "__main__":
   while not p:
     time.sleep(0.1)
     try:
-        p = Panda()
+        p = Panda("4f0039000651363038363036")
         p.set_safety_mode(Panda.SAFETY_ALLOUTPUT)
+        for b in [0, 1, 2, 3, 0xFF]:
+          p.can_clear(b)
     except:
         pass
-      
-  lr = LogReader(sys.argv[1])
-  replay_drive(lr, p)
+
+  while 1:
+    print("starting ...")
+    lr = LogReader(sys.argv[1])
+    replay_drive(lr, p)
