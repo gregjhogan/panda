@@ -15,10 +15,10 @@ class Message():
     for i in range(len(self.ones)):
       zero_to_one = other.zeros[i] & self.ones[i]
       if zero_to_one:
-        print('id %s 0 -> 1 at byte %d bitmask %d' % (self.message_id, i, zero_to_one))
+        print(f'id {self.message_id} 0 -> 1 at byte {i} bitmask {zero_to_one}')
       one_to_zero = other.ones[i] & self.zeros[i]
       if one_to_zero:
-        print('id %s 1 -> 0 at byte %d bitmask %d' % (self.message_id, i, one_to_zero))
+        print(f'id {self.message_id} 1 -> 0 at byte {i} bitmask {one_to_zero}')
 
 
 class Info():
@@ -29,13 +29,15 @@ class Info():
 
   def load(self, filename, start, end):
     """Given a CSV file, adds information about message IDs and their values."""
-    with open(filename, 'rb') as inp:
+    with open(filename, 'r') as inp:
       reader = csv.reader(inp)
       next(reader, None)  # skip the CSV header
       for row in reader:
         if not len(row):
           continue
         time = float(row[0])
+        if not row[2].isdigit():
+          continue
         bus = int(row[2])
         if time < start or bus > 127:
           continue
@@ -45,7 +47,7 @@ class Info():
           message_id = row[1][2:]  # remove leading '0x'
         else:
           message_id = hex(int(row[1]))[2:]  # old message IDs are in decimal
-        message_id = '%s:%s' % (bus, message_id)
+        message_id = f'{bus}:{message_id}'
         if row[3].startswith('0x'):
           data = row[3][2:]  # remove leading '0x'
         else:
@@ -83,6 +85,6 @@ def PrintUnique(log_file, low_range, high_range):
 
 if __name__ == "__main__":
   if len(sys.argv) < 4:
-    print('Usage:\n%s log.csv <low-start>-<low-end> <high-start>-<high-end>' % sys.argv[0])
+    print(f'Usage:\n{sys.argv[0]} log.csv <low-start>-<low-end> <high-start>-<high-end>')
     sys.exit(0)
   PrintUnique(sys.argv[1], sys.argv[2], sys.argv[3])

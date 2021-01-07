@@ -14,9 +14,9 @@ class Message():
 
   def printMatches(self):
     """Prints bits that transition from always zero to always 1 and vice versa."""
-    for i in xrange(len(self.matches)):
+    for i in range(len(self.matches)):
       if self.matches[i]:
-        print 'id %s matches at byte %d (%d-%d)' % (self.message_id, i, self.min[i], self.max[i])
+        print(f'id {self.message_id} matches at byte {i} ({self.min[i]}-{self.max[i]})')
 
 class Info():
   """A collection of Messages."""
@@ -26,12 +26,14 @@ class Info():
 
   def load(self, filename, value, tolerance, start, end):
     """Given a CSV file, adds information about message IDs and their values."""
-    with open(filename, 'rb') as input:
-      reader = csv.reader(input)
+    with open(filename, 'r') as f:
+      reader = csv.reader(f)
       next(reader, None)  # skip the CSV header
       for row in reader:
         if not len(row): continue
         time = float(row[0])
+        if not row[2].isdigit():
+          continue
         bus = int(row[2])
         if time < start or bus > 127:
           continue
@@ -41,7 +43,7 @@ class Info():
           message_id = row[1][2:]  # remove leading '0x'
         else:
           message_id = hex(int(row[1]))[2:]  # old message IDs are in decimal
-        message_id = '%s:%s' % (bus, message_id)
+        message_id = f'{bus}:{message_id}'
         if row[3].startswith('0x'):
           data = row[3][2:]  # remove leading '0x'
         else:
@@ -51,17 +53,17 @@ class Info():
           self.messages[message_id] = Message(message_id)
           new_message = True
         message = self.messages[message_id]
-        bytes = bytearray.fromhex(data)
-        for i in xrange(len(bytes)):
-          byte = int(bytes[i])
+        d = bytearray.fromhex(data)
+        for i in range(len(d)):
+          b = int(d[i])
           if new_message:
-            message.matches[i] = abs(byte - value) <= tolerance
-            message.min[i] = byte
-            message.max[i] = byte
+            message.matches[i] = abs(b - value) <= tolerance
+            message.min[i] = b
+            message.max[i] = b
           else:
-            if message.min[i] > byte: message.min[i] = byte
-            if message.max[i] < byte: message.max[i] = byte
-            if message.matches[i] == 1 and abs(byte - value) > tolerance:
+            if message.min[i] > b: message.min[i] = b
+            if message.max[i] < b: message.max[i] = b
+            if message.matches[i] == 1 and abs(b - value) > tolerance:
               message.matches[i] = 0
 
 def PrintMatchingValues(log_file, value, tolerance, time_range):
@@ -75,6 +77,6 @@ def PrintMatchingValues(log_file, value, tolerance, time_range):
 
 if __name__ == "__main__":
   if len(sys.argv) < 5:
-    print 'Usage:\n%s log.csv <value> <tolerance> <start>-<end>' % sys.argv[0]
+    print(f'Usage:\n{sys.argv[0]} log.csv <value> <tolerance> <start>-<end>')
     sys.exit(0)
   PrintMatchingValues(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
