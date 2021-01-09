@@ -6,17 +6,18 @@ import sys
 
 class Message():
   """Details about a specific message ID."""
-  def __init__(self, message_id):
+  def __init__(self, message_id, mask_len):
     self.message_id = message_id
-    self.matches = [0] * 8 # 1 = always matches desired value
-    self.min = [0] * 8
-    self.max = [0] * 8
+    self.mask_len = mask_len
+    self.matches = [0] * 64 # 1 = always matches desired value
+    self.min = [0] * 64
+    self.max = [0] * 64
 
   def printMatches(self):
     """Prints bits that transition from always zero to always 1 and vice versa."""
     for i in range(len(self.matches)):
       if self.matches[i]:
-        print(f'id {self.message_id} matches at byte {i} ({self.min[i]}-{self.max[i]})')
+        print(f'id {self.message_id} matches bits {i}-{i+self.mask_len} (starts in byte {int(i/8)}) ({self.min[i]}-{self.max[i]})')
 
 class Info():
   """A collection of Messages."""
@@ -27,6 +28,14 @@ class Info():
   def load(self, filename, value, tolerance, start, end):
     """Given a CSV file, adds information about message IDs and their values."""
     with open(filename, 'r') as f:
+      v = value
+      mask = 0
+      mask_len = 0
+      while v > 0:
+        v >>= 1
+        mask_len += 1
+      mask = (1 << mask_len) - 1
+
       reader = csv.reader(f)
       next(reader, None)  # skip the CSV header
       for row in reader:
@@ -50,12 +59,19 @@ class Info():
           data = row[3]
         new_message = False
         if message_id not in self.messages:
-          self.messages[message_id] = Message(message_id)
+          self.messages[message_id] = Message(message_id, mask_len)
           new_message = True
         message = self.messages[message_id]
+
+        v = 0
         d = bytearray.fromhex(data)
+        # assumes little endian
         for i in range(len(d)):
-          b = int(d[i])
+          v += int(d[i]) << (i * 8)
+
+        i = 0
+        while v > 0:
+          b = v & mask
           if new_message:
             message.matches[i] = abs(b - value) <= tolerance
             message.min[i] = b
@@ -65,6 +81,8 @@ class Info():
             if message.max[i] < b: message.max[i] = b
             if message.matches[i] == 1 and abs(b - value) > tolerance:
               message.matches[i] = 0
+          v >>= 1
+          i += 1
 
 def PrintMatchingValues(log_file, value, tolerance, time_range):
   value = int(value)
