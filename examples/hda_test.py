@@ -44,26 +44,26 @@ def stop(idx):
   return idx
 
 def speed_limit_55_mph(idx):
-  #msg = [ADDR, b"\x00\x00" + bytes([idx]) + b"\x40\x20\x32\x00\x1c", BUS]
-  msg = [ADDR, b"\x00\x00" + bytes([idx]) + b"\x40\x20\x52\x00\x1c", BUS]
-  print(*msg)
-  p.can_send(*msg)
-  sleep(0.04)
-  p.can_send(*msg)
-  sleep(0.04)
-  p.can_send(*msg)
-  idx += 1
-  sleep(2)
+  # #msg = [ADDR, b"\x00\x00" + bytes([idx]) + b"\x40\x20\x32\x00\x1c", BUS]
+  # msg = [ADDR, b"\x00\x00" + bytes([idx]) + b"\x40\x20\x52\x00\x1c", BUS]
+  # print(*msg)
+  # p.can_send(*msg)
+  # sleep(0.04)
+  # p.can_send(*msg)
+  # sleep(0.04)
+  # p.can_send(*msg)
+  # idx += 1
+  # sleep(2)
 
-  msg = [ADDR, b"\x00\x00" + bytes([idx]) + b"\x00\x20\x30\x11\x20", BUS]
-  print(*msg)
-  p.can_send(*msg)
-  sleep(0.04)
-  p.can_send(*msg)
-  sleep(0.04)
-  p.can_send(*msg)
-  idx += 1
-  sleep(1)
+  # msg = [ADDR, b"\x00\x00" + bytes([idx]) + b"\x00\x20\x30\x11\x20", BUS]
+  # print(*msg)
+  # p.can_send(*msg)
+  # sleep(0.04)
+  # p.can_send(*msg)
+  # sleep(0.04)
+  # p.can_send(*msg)
+  # idx += 1
+  # sleep(1)
 
   msg = [ADDR, b"\x00\x00" + bytes([idx]) + b"\x00\x00\x30\x12\x6c", BUS]
   print(*msg)
