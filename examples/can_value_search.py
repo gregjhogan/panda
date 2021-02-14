@@ -53,6 +53,11 @@ class Info():
         else:
           message_id = hex(int(row[1]))[2:]  # old message IDs are in decimal
         message_id = f'{bus}:{message_id}'
+
+        # HACK: filter addrs
+        #if message_id not in ['0:222', '0:223', '0:224', '0:225']:
+        #  continue
+
         if row[3].startswith('0x'):
           data = row[3][2:]  # remove leading '0x'
         else:
@@ -64,14 +69,26 @@ class Info():
         message = self.messages[message_id]
 
         v = 0
-        d = bytearray.fromhex(data)
         # assumes little endian
+        d = bytearray.fromhex(data)
+        # assumes big endian
+        #d.reverse()
         for i in range(len(d)):
           v += int(d[i]) << (i * 8)
-
         i = 0
         while v > 0:
           b = v & mask
+          # if new_message:
+          #   message.matches[i] = abs(b - value) <= tolerance
+          #   message.min[i] = b
+          #   message.max[i] = b
+          # else:
+          #   if message.min[i] > b: message.min[i] = b
+          #   if message.max[i] < b: message.max[i] = b
+          #   if message.matches[i] == 1 and abs(b - value) > tolerance:
+          #     message.matches[i] = 0
+          # HACK: find all places a value occurs
+          #if message_id == '0:224' and b == value: print(b, value, i)
           if new_message:
             message.matches[i] = abs(b - value) <= tolerance
             message.min[i] = b
@@ -79,8 +96,8 @@ class Info():
           else:
             if message.min[i] > b: message.min[i] = b
             if message.max[i] < b: message.max[i] = b
-            if message.matches[i] == 1 and abs(b - value) > tolerance:
-              message.matches[i] = 0
+            if message.matches[i] == 0 and abs(b - value) <= tolerance:
+              message.matches[i] = 1
           v >>= 1
           i += 1
 
