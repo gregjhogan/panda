@@ -38,6 +38,11 @@ def replay_drive(lr, p):
         # eps tx addrs
         if canmsg.address in (0x251, 0x2B0, 0x381):
           continue
+        # eps rx addrs
+        #if canmsg.address not in (1136, 870, 871, 809, 608, 356, 912, 832, 1342, 544, 1265, 1292, 339, 902, 1064, 906):
+        # 1136 = P_STS, 870 = 366_EMS, 608 = EMS16, 832 = LKAS11, 1342 = LKAS12, 1265 = CLU11, 902 = WHL_SPD11
+        if canmsg.address not in (1136, 870, 608, 832, 1342, 1265): #, 902):
+          continue
         # convert sent messages to appropriate bus
         bus = canmsg.src if canmsg.src < 128 else canmsg.src - 128
         msgs.append([canmsg.address, None, canmsg.dat, bus])
