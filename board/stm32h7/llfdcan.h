@@ -163,8 +163,8 @@ bool llcan_init(FDCAN_GlobalTypeDef *CANx) {
     CANx->CCCR |= FDCAN_CCCR_TXP;
     // Disable protocol exception handling
     CANx->CCCR |= FDCAN_CCCR_PXHD;
-    // FD with BRS
-    CANx->CCCR |= (FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE);
+    // FD with BRS and non-ISO
+    CANx->CCCR |= (FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE | FDCAN_CCCR_NISO);
 
     // Set TX mode to FIFO
     CANx->TXBC &= ~(FDCAN_TXBC_TFQM);
