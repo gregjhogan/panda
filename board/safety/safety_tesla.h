@@ -148,6 +148,11 @@ static int tesla_fwd_hook(int bus_num, int addr) {
 
   if(bus_num == 2) {
     bool block_msg = false;
+
+    if (addr == 0x389) {
+      block_msg = true;
+    }
+
     if (addr == 0x488) {
       block_msg = true;
     }
@@ -170,6 +175,7 @@ static safety_config tesla_init(uint16_t param) {
   static const CanMsg TESLA_M3_Y_TX_MSGS[] = {
     {0x488, 0, 4},  // DAS_steeringControl
     {0x2b9, 0, 8},  // DAS_control
+    {0x389, 0, 8},  // DAS_status2
   };
 
   tesla_longitudinal = GET_FLAG(param, TESLA_FLAG_LONGITUDINAL_CONTROL);
