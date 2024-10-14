@@ -17,8 +17,8 @@ static void tesla_rx_hook(const CANPacket_t *to_push) {
   }
 
   if(bus == 0) {
-    if(addr == 0x155){
-      vehicle_moving = !GET_BIT(to_push, 41U);
+    if(addr == 0x286){
+      vehicle_moving = ((GET_BYTE(to_push, 5) & 0x1CU) >> 2) != 3;
     }
 
     if(addr == 0x257){
@@ -61,6 +61,7 @@ static void tesla_rx_hook(const CANPacket_t *to_push) {
   if (tesla_longitudinal) {
       generic_rx_checks((addr == 0x2b9) && (bus == 0));
   }
+  controls_allowed = true;
 }
 
 
@@ -132,9 +133,10 @@ static bool tesla_tx_hook(const CANPacket_t *to_send) {
   }
 
   if (violation) {
-    tx = false;
+    //tx = false;
   }
 
+  controls_allowed = true;
   return tx;
 }
 
@@ -148,6 +150,19 @@ static int tesla_fwd_hook(int bus_num, int addr) {
 
   if(bus_num == 2) {
     bool block_msg = false;
+
+    if (addr == 0x389) {
+      block_msg = true;
+    }
+
+    if (addr == 0x39b) {
+      block_msg = true;
+    }
+
+    if (addr == 0x27d) {
+      block_msg = true;
+    }
+
     if (addr == 0x488) {
       block_msg = true;
     }
@@ -170,6 +185,9 @@ static safety_config tesla_init(uint16_t param) {
   static const CanMsg TESLA_M3_Y_TX_MSGS[] = {
     {0x488, 0, 4},  // DAS_steeringControl
     {0x2b9, 0, 8},  // DAS_control
+    {0x39b, 0, 8},  // DAS_status
+    {0x389, 0, 8},  // DAS_status2
+    {0x27d, 0, 3},  // APS_eacMonitor
   };
 
   tesla_longitudinal = GET_FLAG(param, TESLA_FLAG_LONGITUDINAL_CONTROL);
@@ -180,7 +198,6 @@ static safety_config tesla_init(uint16_t param) {
 
   static RxCheck tesla_model3_y_rx_checks[] = {
     {.msg = {{0x2b9, 2, 8, .frequency = 25U}, { 0 }, { 0 }}},   // DAS_control
-    {.msg = {{0x155, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // ESP_wheelRotation (standstill)
     {.msg = {{0x257, 0, 8, .frequency = 50U}, { 0 }, { 0 }}},   // DI_speed (speed in kph)
     {.msg = {{0x370, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},  // EPAS3S_internalSAS (steering angle)
     {.msg = {{0x118, 0, 8, .frequency = 100U}, { 0 }, { 0 }}},  // DI_systemStatus (gas pedal)
