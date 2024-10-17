@@ -174,6 +174,8 @@ static safety_config tesla_init(uint16_t param) {
     {0x488, 0, 4},  // DAS_steeringControl
     {0x2b9, 0, 8},  // DAS_control
     {0x27D, 0, 3},  // APS_eacMonitor
+    {0x300, 1, 8},  // VEHICLE_STATE
+    {0x301, 1, 8},  // VEHICLE_STATE2
   };
 
   tesla_longitudinal = GET_FLAG(param, TESLA_FLAG_LONGITUDINAL_CONTROL);
